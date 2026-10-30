@@ -16,6 +16,7 @@ It's tested on Rex Beta 0.1.0 (1541) on macOS, with fish as the shell.
 | `prefix.lua` | tmux-style shortcuts after `Ctrl+A`. |
 | `projects.lua` | One "Session: name" action per project folder, to open or create a session for it. |
 | `fish/rex-windows.fish` | The fzf picker behind `Cmd+M`. |
+| `fish/rex-sessions.fish` | The fzf picker behind `Cmd+O`, with a preview of each session's tabs. |
 
 ## Install
 
@@ -50,7 +51,8 @@ After that, `Cmd+Shift+R` reloads the config.
 | `Cmd+Z` | Zen mode |
 | ``Cmd+` `` | Scratch shell |
 | `Cmd+arrows` / `Cmd+Shift+arrows` | Focus / resize panes |
-| `Cmd+O` or `Cmd+S` | Switch session |
+| `Cmd+O` | Session picker |
+| `Cmd+S` | Rex's built-in session switcher |
 | `Cmd+B` | Previous session |
 | `Cmd+N` | New session |
 | `Cmd+Shift+S` | Sidebar |
@@ -80,7 +82,8 @@ Press `Ctrl+A`, let go, then the key. `Ctrl+A` twice sends a real `Ctrl+A`.
 | `m` | Tab picker |
 | `Ctrl+0` | Last tab |
 | `Shift+Left` / `Shift+Right` | Move tab |
-| `o` or `s` | Switch session |
+| `o` | Session picker |
+| `s` | Rex's built-in session switcher |
 | `b` | Previous session |
 | `Ctrl+C` | New session |
 | `R` | Rename session |
@@ -91,6 +94,8 @@ Press `Ctrl+A`, let go, then the key. `Ctrl+A` twice sends a real `Ctrl+A`.
 ## Actions
 
 **Tab picker** (`Cmd+M`). An fzf list of the current session's tabs, numbered the way `Cmd+1` to `Cmd+9` reach them. Type to filter, Enter to jump. If nothing matches, Enter opens a new tab with what you typed as its name.
+
+**Session picker** (`Cmd+O`). A large fzf popup of every session, with the current one marked. The right side previews the highlighted session's tabs. Type to filter, Enter to switch.
 
 **Go to tab N** (`Cmd+1` to `Cmd+9`). In my setup, the built-in "go to tab" counted tabs in the previously viewed session, so this action takes the Nth tab from the current session instead. See Known issues.
 
@@ -113,13 +118,15 @@ A few actions call personal scripts. Replace them with your own commands, or rem
 
 ## Known issues
 
-**Go to tab N works locally, not from a remote client.** The action asks the server's own CLI to run "Go to Session" for the client. It takes that route because, in my setup, the more direct options didn't switch tabs on the local app:
+**On a remote host, use `Cmd+S` to switch sessions.** When the app is connected to another Mac, the keys run on your own machine's Rex server, which doesn't have that host's sessions. The config notices this and falls back to Rex's own actions: tab keys work as usual, `Cmd+O` tries Rex's session switcher, and the tab picker says it only covers local sessions. In my setup the `Cmd+O` fallback didn't open the switcher, but `Cmd+S` does.
+
+**Go to tab N takes a detour.** On local sessions, the action asks the server's own CLI to run "Go to Session" for the client. It takes that route because, in my setup, the more direct options didn't switch tabs on the local app:
 
 - `client.tab.goto` counted tabs in the previously viewed session;
 - queuing `session.select` on the client didn't change the tab;
 - `rex.session.focus_window` didn't either.
 
-From a Rex app connected to a remote host, both routes end with `session "…" was not found on this server`. Last tab has the same limit. Rex is in beta, so this may change, and there may be a better way I've missed. If you know one, an issue would be very welcome.
+On a remote host, tab keys use Rex's own "go to tab", and last tab does nothing. Rex is in beta, so this may change, and there may be a better way I've missed. If you know one, an issue would be very welcome.
 
 ## Lessons from moving off tmux
 

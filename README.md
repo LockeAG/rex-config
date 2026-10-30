@@ -17,6 +17,7 @@ It's tested on Rex Beta 0.1.0 (1541) on macOS, with fish as the shell.
 | `projects.lua` | One "Session: name" action per project folder, to open or create a session for it. |
 | `fish/rex-windows.fish` | The fzf picker behind `Cmd+M`. |
 | `fish/rex-sessions.fish` | The fzf picker behind `Cmd+O`, with a preview of each session's tabs. |
+| `fish/rex-status.fish` | The status dots both pickers show. |
 
 ## Install
 
@@ -30,6 +31,7 @@ for f in ~/src/rex-config/*.lua
 end
 ln -s ~/src/rex-config/fish/rex-windows.fish ~/.config/fish/functions/
 ln -s ~/src/rex-config/fish/rex-sessions.fish ~/.config/fish/functions/
+ln -s ~/src/rex-config/fish/rex-status.fish ~/.config/fish/functions/
 rex config reload
 ```
 
@@ -96,7 +98,9 @@ Press `Ctrl+A`, let go, then the key. `Ctrl+A` twice sends a real `Ctrl+A`.
 
 **Tab picker** (`Cmd+M`). An fzf list of the current session's tabs, numbered the way `Cmd+1` to `Cmd+9` reach them. Type to filter, Enter to jump. If nothing matches, Enter opens a new tab with what you typed as its name.
 
-**Session picker** (`Cmd+O`). A large fzf popup of every session, with the current one marked. The right side previews the highlighted session's tabs. Type to filter, Enter to switch. Sessions you used recently come first and the current one goes last, so `Cmd+O` then Enter goes back to the previous session. It only knows about sessions you opened it in or picked from it; the list lives in `~/.local/state/rex-recent-sessions`.
+**Status dots.** Both pickers put a dot before each tab and session, from the status programs report to Rex ([OSC 7501](https://www.superlogical.com/rex/docs)): green for done, orange for working, yellow for idle, red for blocked or error, in Tokyo Night colours. A session shows its most urgent tab. Rex keeps a "done" until the program replaces it, and only the app knows what you've already seen, so a done older than half an hour shows as idle. Pressing a picker's key again closes it.
+
+**Session picker** (`Cmd+O`). A large fzf popup of every session, with the current one marked. The right side previews the highlighted session's tabs, with their dots. Type to filter, Enter to switch. Sessions you used recently come first and the current one goes last, so `Cmd+O` then Enter goes back to the previous session. It only knows about sessions you opened it in or picked from it; the list lives in `~/.local/state/rex-recent-sessions`.
 
 **Rex's session switcher** (`Cmd+S`). I keep the built-in one too. It puts the sessions whose programs just finished at the top, so when I run many long jobs it's the fastest way to the one that needs me. `Cmd+O` is for finding a session by name and seeing its tabs first.
 

@@ -32,7 +32,7 @@ prefix("ctrl+0", "last_tab")
 prefix("shift+left", "client.tab.move.backward")
 prefix("shift+right", "client.tab.move.forward")
 
-prefix("o", "session.switch")
+prefix("o", "sessions")
 prefix("s", "session.switch")
 prefix("b", "session.previous")
 prefix("ctrl+c", "session.new")

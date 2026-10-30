@@ -24,7 +24,7 @@ for i = 1, 9 do
   rex.bind("cmd+" .. i, "tab", { action = "client.tab.goto", index = i })
 end
 
-rex.bind("cmd+o", "session.switch")
+rex.bind("cmd+o", "sessions")
 rex.bind("cmd+s", "session.switch")
 rex.bind("cmd+n", "session.new")
 rex.bind("cmd+shift+n", "session.new")

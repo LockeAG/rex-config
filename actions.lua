@@ -173,6 +173,17 @@ local function note(session_id)
   return t, view
 end
 
+-- A client connected to a remote host runs its keys on its own server, which
+-- doesn't have the session, so those keys fall back to the client's own
+-- actions.
+local function here(session_id)
+  local list = rex.call("session.list")
+  for _, s in ipairs(list and list.sessions or {}) do
+    if s.session_id == session_id then return true end
+  end
+  return false
+end
+
 -- A queued session.select resolves on the client's own server, so the jump
 -- goes through this server's CLI instead.
 local function jump(ctx, window_id)
@@ -186,6 +197,9 @@ rex.action{
   category = "Tabs",
   run = function(ctx, args)
     if not (args and args.action) then return end
+    if not here(ctx.session_id) then
+      return rex.client.queue(args.action, args.index and { index = args.index } or nil)
+    end
     local _, view = note(ctx.session_id)
     if args.index then
       -- client.tab.goto counts in another session after a switch, so the
@@ -203,6 +217,7 @@ rex.action{
   title = "Last Tab",
   category = "Tabs",
   run = function(ctx)
+    if not here(ctx.session_id) then return end
     local t, view = note(ctx.session_id)
     for _, w in ipairs(view.windows or {}) do
       if w.window_id == t.prev then
@@ -217,9 +232,21 @@ rex.action{
   title = "Windows",
   category = "Popups",
   run = function(ctx)
+    if not here(ctx.session_id) then error("The tab picker only works on this machine's sessions", 0) end
     note(ctx.session_id)
     popup(ctx, "windows", { "fish", "-c", "rex-windows " .. ctx.client_id .. " " .. ctx.session_id },
       { 0.25, 0.2, 0.5, 0.5 })
+  end,
+}
+
+rex.action{
+  name = "sessions",
+  title = "Sessions",
+  category = "Popups",
+  run = function(ctx)
+    if not here(ctx.session_id) then return rex.client.queue("session.switch") end
+    popup(ctx, "sessions", { "fish", "-c", "rex-sessions " .. ctx.client_id .. " " .. ctx.session_id },
+      { 0.1, 0.1, 0.8, 0.8 })
   end,
 }
 

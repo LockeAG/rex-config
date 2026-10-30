@@ -119,6 +119,21 @@ A few actions call my own scripts. They won't work on your machine until you swa
 
 From a Rex app connected to a remote host, every version fails with `session "…" was not found on this server`. Last tab has the same limit. If you know the intended way to do this, please open an issue.
 
+## Lessons from moving off tmux
+
+I moved about fifty long-running terminal programs (AI coding agents, mostly) from tmux to Rex in one day. These are the things that cost me time.
+
+- **A tab's command has no shell behind it.** When the program exits, the tab closes, and with `--keep-open` it freezes on the dead output. End the command with `; exec fish` and an exit drops you to a shell in the same folder.
+- **Run the program in the foreground.** A tab started as `fish -c "status job-control full; <command>"` puts the program in the foreground, so Rex and your scripts see it as the tab's running process.
+- **A dead tab can look alive.** If you ask a tab what runs in its foreground, a tab whose program has exited answers with an empty string, not an error. Check for the empty string.
+- **The CLI looks blocks up in your own session.** Inside a Rex tab, `rex` uses `$REX_SESSION`, so `-b <block>` from another session reads "not found". Scripts that work across sessions should drop it first, for example `env -u REX_SESSION -u REX_BLOCK rex …`.
+- **The server outlives the app.** Quitting Rex doesn't reload anything. Config changes need `rex config reload` or `Cmd+Shift+R`.
+- **Appearance isn't in `~/.config/rex`.** Fonts, theme and window settings live in macOS defaults under `com.superlogical.rex`. To copy them to another Mac, export and import that domain while Rex is quit.
+- **The app reaches a remote host, the CLI may not.** Rex's built-in Tailscale gives the app a route, but macOS itself isn't on the tailnet. Without the Tailscale app, `rex -S <host>` fails with "no such host".
+- **Pastes submit at once in some programs.** Pasting into Claude Code in a Rex tab sends the message immediately. Don't use a paste to test what's in a prompt.
+- **Stow folds the folder.** `stow rex` can turn `~/.config/rex` into a single link to the repo. Use `stow --no-folding rex` to get one link per file.
+- **zoxide can hold `/`.** That path has no folder name to use as a label, which crashed `projects.lua` until it skipped the entry.
+
 ## Updates
 
 This repo is a copy of the Rex part of my dotfiles, and I update it from there. Issues and suggestions are welcome.

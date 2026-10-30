@@ -12,21 +12,22 @@ rex.action{
   end,
 }
 
-local function cwd_of(block_id)
-  if not block_id then return "" end
-  local r = rex.block.call(terminal, "pwd", { block_id = block_id })
-  local url = r and (r.pwd or r.url) or ""
-  return (url:gsub("^file://[^/]*", ""))
+local function cwd_of(ctx, api)
+  if not ctx.block_id then return nil end
+  local r = (api or rex).block.call(terminal, "pwd", { session_id = ctx.session_id, block_id = ctx.block_id })
+  local url = r and (r.pwd or r.url)
+  return url and (url:gsub("^file://[^/]*", "")) or nil
 end
 
-local function popup(ctx, label, command, bounds)
-  local _, err = rex.session.new_layer{
+local function popup(ctx, label, command, bounds, api)
+  local _, err = (api or rex).session.new_layer{
+    session_id = ctx.session_id,
     bounds = bounds or { 0.05, 0.05, 0.9, 0.9 },
     focus = true,
     layout = rex.layout.block{
       flavor = shell,
       label = label,
-      options = { command = command, cwd = cwd_of(ctx.block_id) },
+      options = { command = command, cwd = cwd_of(ctx, api) },
     },
   }
   if err then error(err, 0) end
@@ -165,28 +166,57 @@ rex.action{
 
 local tabs = {}
 
-local function note(session_id)
-  local view = rex.session.view{}
+local function note(at, session_id)
+  local view = at.api.session.view{ session_id = session_id }
   local t = tabs[session_id] or {}
   if view.active_window_id ~= t.cur then t.prev, t.cur = t.cur, view.active_window_id end
   tabs[session_id] = t
   return t, view
 end
 
--- A client connected to a remote host runs its keys on its own server, which
--- doesn't have the session, so those keys fall back to the client's own
--- actions.
-local function here(session_id)
-  local list = rex.call("session.list")
+-- A client attached to a remote host runs its keys on its own server, which
+-- doesn't have the host's sessions. The work then goes to the server that has
+-- the session, addressed to the app's own connection there.
+local function has(api, session_id)
+  local list = api.call("session.list")
   for _, s in ipairs(list and list.sessions or {}) do
     if s.session_id == session_id then return true end
   end
   return false
 end
 
--- A queued session.select resolves on the client's own server, so the jump
+local function app_on(api)
+  local me = api.call("server.whoami")
+  local node = me and me.principal and me.principal.node
+  local list = api.call("client.list")
+  for _, c in ipairs(list and list.clients or {}) do
+    if c.info and c.info.kind == "app" and c.principal and c.principal.node == node then return c.client_id end
+  end
+end
+
+local function where(ctx)
+  if has(rex, ctx.session_id) then return { api = rex, client = ctx.client_id } end
+  for _, label in ipairs(rex.servers()) do
+    local api = rex.server(label)
+    if has(api, ctx.session_id) then
+      local client = app_on(api)
+      if not client then error("No Rex app of this machine is attached to " .. label, 0) end
+      -- Session calls on a remote server need the stream attached first. A
+      -- repeat attach may fail; any real failure shows in the next call.
+      api.call("session.attach", { session_id = ctx.session_id })
+      return { api = api, client = client, remote = true }
+    end
+  end
+  error("No server has this session", 0)
+end
+
+-- A queued session.select resolves on the client's own server, so a local jump
 -- goes through this server's CLI instead.
-local function jump(ctx, window_id)
+local function jump(ctx, at, window_id)
+  if at.remote then
+    return check(at.api.call("client.perform", { client_id = at.client, action = "session.select",
+      args = { session_id = ctx.session_id, window_id = window_id } }))
+  end
   rex.exec({ os.getenv("HOME") .. "/.local/bin/rex", "-C", ctx.client_id, "do", "session.select",
     "session_id=" .. ctx.session_id, "window_id=" .. window_id }, { timeout = 5 })
 end
@@ -197,15 +227,13 @@ rex.action{
   category = "Tabs",
   run = function(ctx, args)
     if not (args and args.action) then return end
-    if not here(ctx.session_id) then
-      return rex.client.queue(args.action, args.index and { index = args.index } or nil)
-    end
-    local _, view = note(ctx.session_id)
+    local at = where(ctx)
+    local _, view = note(at, ctx.session_id)
     if args.index then
       -- client.tab.goto counts in another session after a switch, so the
       -- window is picked from this session's own list.
       local w = (view.windows or {})[args.index]
-      if w then jump(ctx, w.window_id) end
+      if w then jump(ctx, at, w.window_id) end
       return
     end
     rex.client.queue(args.action)
@@ -217,11 +245,11 @@ rex.action{
   title = "Last Tab",
   category = "Tabs",
   run = function(ctx)
-    if not here(ctx.session_id) then return end
-    local t, view = note(ctx.session_id)
+    local at = where(ctx)
+    local t, view = note(at, ctx.session_id)
     for _, w in ipairs(view.windows or {}) do
       if w.window_id == t.prev then
-        return jump(ctx, t.prev)
+        return jump(ctx, at, t.prev)
       end
     end
   end,
@@ -232,10 +260,10 @@ rex.action{
   title = "Windows",
   category = "Popups",
   run = function(ctx)
-    if not here(ctx.session_id) then error("The tab picker only works on this machine's sessions", 0) end
-    note(ctx.session_id)
-    popup(ctx, "windows", { "fish", "-c", "rex-windows " .. ctx.client_id .. " " .. ctx.session_id },
-      { 0.25, 0.2, 0.5, 0.5 })
+    local at = where(ctx)
+    note(at, ctx.session_id)
+    popup(ctx, "windows", { "fish", "-c", "rex-windows " .. at.client .. " " .. ctx.session_id },
+      { 0.25, 0.2, 0.5, 0.5 }, at.api)
   end,
 }
 
@@ -244,9 +272,9 @@ rex.action{
   title = "Sessions",
   category = "Popups",
   run = function(ctx)
-    if not here(ctx.session_id) then return rex.client.queue("session.switch") end
-    popup(ctx, "sessions", { "fish", "-c", "rex-sessions " .. ctx.client_id .. " " .. ctx.session_id },
-      { 0.1, 0.1, 0.8, 0.8 })
+    local at = where(ctx)
+    popup(ctx, "sessions", { "fish", "-c", "rex-sessions " .. at.client .. " " .. ctx.session_id },
+      { 0.1, 0.1, 0.8, 0.8 }, at.api)
   end,
 }
 

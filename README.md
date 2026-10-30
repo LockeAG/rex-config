@@ -96,7 +96,7 @@ Press `Ctrl+A`, let go, then the key. `Ctrl+A` twice sends a real `Ctrl+A`.
 
 **Tab picker** (`Cmd+M`). An fzf list of the current session's tabs, numbered the way `Cmd+1` to `Cmd+9` reach them. Type to filter, Enter to jump. If nothing matches, Enter opens a new tab with what you typed as its name.
 
-**Session picker** (`Cmd+O`). A large fzf popup of every session, with the current one marked. The right side previews the highlighted session's tabs. Type to filter, Enter to switch.
+**Session picker** (`Cmd+O`). A large fzf popup of every session, with the current one marked. The right side previews the highlighted session's tabs. Type to filter, Enter to switch. Sessions you used recently come first and the current one goes last, so `Cmd+O` then Enter goes back to the previous session. It only knows about sessions you opened it in or picked from it; the list lives in `~/.local/state/rex-recent-sessions`.
 
 **Rex's session switcher** (`Cmd+S`). I keep the built-in one too. It puts the sessions whose programs just finished at the top, so when I run many long jobs it's the fastest way to the one that needs me. `Cmd+O` is for finding a session by name and seeing its tabs first.
 

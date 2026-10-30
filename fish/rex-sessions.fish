@@ -4,7 +4,13 @@ function rex-sessions -d "fzf picker over Rex sessions, previewing their tabs (R
     # the same app as this server knows it.
     set -l client (rex block ls -s $current --json | jq -r --arg b "$REX_BLOCK" '.blocks[] | select(.block_id == $b) | .owner // empty')
     test -n "$client"; or set client $argv[1]
-    set -l lines (rex ls --json | jq -r --arg c $current '.sessions[] |
+    # Most recent first, the current session last, so Enter goes back.
+    set -l file ~/.local/state/rex-recent-sessions
+    set -l recent $current (string match -v -- $current (command cat $file 2>/dev/null))
+    printf '%s\n' $recent[1..50] >$file
+    set -l lines (rex ls --json | jq -r --arg c $current --argjson r (printf '%s\n' $recent | jq -Rsc 'split("\n")') '
+        .sessions | to_entries | sort_by(.value.session_id as $id |
+            (if $id == $c then 1e9 else ($r | index($id)) // 1e6 end), .key) | .[].value |
         "\(if .session_id == $c then "● " else "  " end)\(.label)\t\(.session_id)"')
     set -l pick (printf '%s\n' $lines | fzf --ansi --cycle --highlight-line --reverse --no-sort \
         --delimiter \t --with-nth 1 --border=rounded --border-label " セッション " \
@@ -20,4 +26,5 @@ function rex-sessions -d "fzf picker over Rex sessions, previewing their tabs (R
         read -P 'press Enter ' -l _
         return 1
     end
+    printf '%s\n' $f[2] $recent[1..49] >$file
 end

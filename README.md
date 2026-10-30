@@ -4,6 +4,8 @@ My configuration for [Rex](https://www.superlogical.com/rex), Superlogical's ter
 
 It's tested on Rex Beta 0.1.0 (1541) on macOS, with fish as the shell.
 
+This is my workflow, and it's what works for me. It isn't a recommended setup or a framework. Take what's useful and change the rest.
+
 ## Files
 
 | File | What it does |

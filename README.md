@@ -29,6 +29,7 @@ for f in ~/src/rex-config/*.lua
     ln -s $f ~/.config/rex/
 end
 ln -s ~/src/rex-config/fish/rex-windows.fish ~/.config/fish/functions/
+ln -s ~/src/rex-config/fish/rex-sessions.fish ~/.config/fish/functions/
 rex config reload
 ```
 
@@ -52,7 +53,7 @@ After that, `Cmd+Shift+R` reloads the config.
 | ``Cmd+` `` | Scratch shell |
 | `Cmd+arrows` / `Cmd+Shift+arrows` | Focus / resize panes |
 | `Cmd+O` | Session picker |
-| `Cmd+S` | Rex's built-in session switcher |
+| `Cmd+S` | Rex's built-in session switcher, with the sessions that just finished on top |
 | `Cmd+B` | Previous session |
 | `Cmd+N` | New session |
 | `Cmd+Shift+S` | Sidebar |
@@ -97,6 +98,8 @@ Press `Ctrl+A`, let go, then the key. `Ctrl+A` twice sends a real `Ctrl+A`.
 
 **Session picker** (`Cmd+O`). A large fzf popup of every session, with the current one marked. The right side previews the highlighted session's tabs. Type to filter, Enter to switch.
 
+**Rex's session switcher** (`Cmd+S`). I keep the built-in one too. It puts the sessions whose programs just finished at the top, so when I run many long jobs it's the fastest way to the one that needs me. `Cmd+O` is for finding a session by name and seeing its tabs first.
+
 **Go to tab N** (`Cmd+1` to `Cmd+9`). In my setup, the built-in "go to tab" counted tabs in the previously viewed session, so this action takes the Nth tab from the current session instead. See Known issues.
 
 **Last tab** (`Cmd+Shift+B`). Jumps back to the previous tab in the session, like tmux's `last-window`. It only knows about switches made with this config's tab keys and picker.
@@ -118,7 +121,7 @@ A few actions call personal scripts. Replace them with your own commands, or rem
 
 ## Known issues
 
-**On a remote host, use `Cmd+S` to switch sessions.** When the app is connected to another Mac, the keys run on your own machine's Rex server, which doesn't have that host's sessions. The config notices this and falls back to Rex's own actions: tab keys work as usual, `Cmd+O` tries Rex's session switcher, and the tab picker says it only covers local sessions. In my setup the `Cmd+O` fallback didn't open the switcher, but `Cmd+S` does.
+**A remote host knows your app by another ID.** When the app is connected to another Mac, the pickers open on that host and switch your app from there. Each Rex server gives the app its own client ID, so the ID your key passes in means nothing to the host. The pickers ask the host which client owns the popup they run in and use that ID instead. If a switch still fails, the popup keeps the error on screen until you press Enter.
 
 **Go to tab N takes a detour.** On local sessions, the action asks the server's own CLI to run "Go to Session" for the client. It takes that route because, in my setup, the more direct options didn't switch tabs on the local app:
 
@@ -126,7 +129,7 @@ A few actions call personal scripts. Replace them with your own commands, or rem
 - queuing `session.select` on the client didn't change the tab;
 - `rex.session.focus_window` didn't either.
 
-On a remote host, tab keys use Rex's own "go to tab", and last tab does nothing. Rex is in beta, so this may change, and there may be a better way I've missed. If you know one, an issue would be very welcome.
+Rex is in beta, so this may change, and there may be a better way I've missed. If you know one, an issue would be very welcome.
 
 ## Lessons from moving off tmux
 
@@ -141,6 +144,7 @@ I moved about fifty long-running terminal programs, mostly AI coding agents, fro
 - **The app reaches a remote host, the CLI may not.** Rex's built-in Tailscale gives the app a route, but macOS itself isn't on the tailnet. Without the Tailscale app, `rex -S <host>` fails with "no such host".
 - **Pastes submit at once in some programs.** Pasting into Claude Code in a Rex tab sends the message immediately. Don't use a paste to test what's in a prompt.
 - **Stow folds the folder.** `stow rex` can turn `~/.config/rex` into a single link to the repo. Use `stow --no-folding rex` to get one link per file.
+- **A client ID is only good on one server.** The same app has a different ID on every Rex server it connects to. A script that runs on a remote host and names your app by its local ID gets "client target not found".
 - **zoxide can hold `/`.** That path has no folder name to use as a label, which crashed `projects.lua` until it skipped the entry.
 
 ## Updates

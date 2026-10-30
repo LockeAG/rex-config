@@ -1,6 +1,9 @@
 function rex-sessions -d "fzf picker over Rex sessions, previewing their tabs (Rex cmd+o)"
-    set -l client $argv[1]
     set -l current $argv[2]
+    # A remote app's key passes its id on its own server; the popup's owner is
+    # the same app as this server knows it.
+    set -l client (rex block ls -s $current --json | jq -r --arg b "$REX_BLOCK" '.blocks[] | select(.block_id == $b) | .owner // empty')
+    test -n "$client"; or set client $argv[1]
     set -l lines (rex ls --json | jq -r --arg c $current '.sessions[] |
         "\(if .session_id == $c then "● " else "  " end)\(.label)\t\(.session_id)"')
     set -l pick (printf '%s\n' $lines | fzf --ansi --cycle --highlight-line --reverse --no-sort \
@@ -11,5 +14,10 @@ function rex-sessions -d "fzf picker over Rex sessions, previewing their tabs (R
         --preview-label ' tabs ')
     test -n "$pick"; or return 0
     set -l f (string split \t -- $pick)
-    rex -C $client do session.select session_id=$f[2] >/dev/null
+    set -l err (rex -C $client do session.select session_id=$f[2] 2>&1 >/dev/null)
+    or begin
+        printf 'rex-sessions: %s\n' $err
+        read -P 'press Enter ' -l _
+        return 1
+    end
 end

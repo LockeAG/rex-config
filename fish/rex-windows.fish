@@ -4,9 +4,11 @@ function rex-windows -d "fzf picker over the current Rex session's windows (Rex 
     # the same app as this server knows it.
     set -l client (rex block ls -s $current --json | jq -r --arg b "$REX_BLOCK" '.blocks[] | select(.block_id == $b) | .owner // empty')
     test -n "$client"; or set client $argv[1]
+    set -l dots (rex-status 2>/dev/null | jq -c . 2>/dev/null)
+    test -n "$dots"; or set dots '{}'
     # Numbered as cmd+1..9 reaches them.
-    set -l lines (rex window ls -s $current --json | jq -r '. as $s | .windows | to_entries[] |
-        "\(.key + 1)  \(.value.label)\t\($s.session_id)\t\(.value.window_id)"')
+    set -l lines (rex window ls -s $current --json | jq -r --argjson d "$dots" '. as $s | .windows | to_entries[] |
+        "\($d[.value.window_id] // " ") \(.key + 1)  \(.value.label)\t\($s.session_id)\t\(.value.window_id)"')
     set -l name (rex ls --json | jq -r --arg c $current '.sessions[] | select(.session_id == $c) | .label')
     set -l pick (printf '%s\n' $lines | fzf --ansi --cycle --highlight-line --reverse --no-sort \
         --delimiter \t --with-nth 1 --border=rounded --border-label " 窓 $name " \

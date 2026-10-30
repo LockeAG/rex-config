@@ -19,8 +19,16 @@ local function cwd_of(ctx, api)
   return url and (url:gsub("^file://[^/]*", "")) or nil
 end
 
+-- Pressing a popup's key again closes it rather than stacking a second one.
 local function popup(ctx, label, command, bounds, api)
-  local _, err = (api or rex).session.new_layer{
+  api = api or rex
+  local list = api.call("session.list_blocks", { session_id = ctx.session_id })
+  for _, b in ipairs(list and list.blocks or {}) do
+    if b.label == label and b.placement ~= "detached" then
+      return api.call("block.close", { session_id = ctx.session_id, block_id = b.block_id })
+    end
+  end
+  local _, err = api.session.new_layer{
     session_id = ctx.session_id,
     bounds = bounds or { 0.05, 0.05, 0.9, 0.9 },
     focus = true,

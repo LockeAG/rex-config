@@ -1,10 +1,10 @@
 # rex-config
 
-My configuration for [Rex](https://www.superlogical.com/rex), Superlogical's terminal multiplexer. I moved to Rex from tmux, so the keys keep tmux habits: a `Ctrl+A` prefix, `h j k l` to move between panes, and a picker for tabs. Most things also have a direct `Cmd` shortcut.
+A configuration for [Rex](https://www.superlogical.com/rex), Superlogical's terminal multiplexer. It grew out of a move from tmux, so the keys keep tmux habits: a `Ctrl+A` prefix, `h j k l` to move between panes, and a picker for tabs. Most things also have a direct `Cmd` shortcut.
 
 It's tested on Rex Beta 0.1.0 (1541) on macOS, with fish as the shell.
 
-> **Disclaimer:** this is my workflow, and it's what works for me. It isn't a recommended setup or a framework. Take what's useful and change the rest.
+> **Disclaimer:** this is my workflow, and it's what works for me. It's shared in case parts of it help with yours. Take what's useful and change the rest.
 
 ## Files
 
@@ -92,7 +92,7 @@ Press `Ctrl+A`, let go, then the key. `Ctrl+A` twice sends a real `Ctrl+A`.
 
 **Tab picker** (`Cmd+M`). An fzf list of the current session's tabs, numbered the way `Cmd+1` to `Cmd+9` reach them. Type to filter, Enter to jump. If nothing matches, Enter opens a new tab with what you typed as its name.
 
-**Go to tab N** (`Cmd+1` to `Cmd+9`). Rex's own "go to tab" counted tabs in the session I had just left, so this action takes the Nth tab from the current session instead. See Known issues.
+**Go to tab N** (`Cmd+1` to `Cmd+9`). In my setup, the built-in "go to tab" counted tabs in the previously viewed session, so this action takes the Nth tab from the current session instead. See Known issues.
 
 **Last tab** (`Cmd+Shift+B`). Jumps back to the previous tab in the session, like tmux's `last-window`. It only knows about switches made with this config's tab keys and picker.
 
@@ -104,26 +104,26 @@ Press `Ctrl+A`, let go, then the key. `Ctrl+A` twice sends a real `Ctrl+A`.
 
 ## Make it yours
 
-A few actions call my own scripts. They won't work on your machine until you swap in your own commands or delete them:
+A few actions call personal scripts. Replace them with your own commands, or remove them:
 
 - `tools` in `actions.lua`: popups for notes search (`iggy-search`, `Ctrl+A n`), a kubectl cheatsheet (`kcheat`, `Ctrl+A Alt+K`), GitHub Actions runs (`gha`, `Ctrl+A g` and `G`) and a tmux cheatsheet (`Ctrl+A ?`).
-- `sd` (`Cmd+G`) types `sd`, my directory search, into a fish prompt.
+- `sd` (`Cmd+G`) types `sd`, a directory search function, into a fish prompt.
 - `theme_tokyonight` reads the Tokyo Night theme from the Ghostty app.
-- `Cmd+J` and `Cmd+Shift+W` send `Alt+J` and `Alt+W`, which my shell binds.
+- `Cmd+J` and `Cmd+Shift+W` send `Alt+J` and `Alt+W` for shell bindings.
 
 ## Known issues
 
-**Go to tab N works locally, not from a remote client.** The action asks the server's own CLI to run "Go to Session" for the client. It took that detour because the direct routes failed on the local app:
+**Go to tab N works locally, not from a remote client.** The action asks the server's own CLI to run "Go to Session" for the client. It takes that route because, in my setup, the more direct options didn't switch tabs on the local app:
 
-- `client.tab.goto` counts tabs in the session you just left;
+- `client.tab.goto` counted tabs in the previously viewed session;
 - queuing `session.select` on the client didn't change the tab;
 - `rex.session.focus_window` didn't either.
 
-From a Rex app connected to a remote host, every version fails with `session "…" was not found on this server`. Last tab has the same limit. If you know the intended way to do this, please open an issue.
+From a Rex app connected to a remote host, both routes end with `session "…" was not found on this server`. Last tab has the same limit. Rex is in beta, so this may change, and there may be a better way I've missed. If you know one, an issue would be very welcome.
 
 ## Lessons from moving off tmux
 
-I moved about fifty long-running terminal programs (AI coding agents, mostly) from tmux to Rex in one day. These are the things that cost me time.
+I moved about fifty long-running terminal programs, mostly AI coding agents, from tmux to Rex. These notes might save someone else some time.
 
 - **A tab's command has no shell behind it.** When the program exits, the tab closes, and with `--keep-open` it freezes on the dead output. End the command with `; exec fish` and an exit drops you to a shell in the same folder.
 - **Run the program in the foreground.** A tab started as `fish -c "status job-control full; <command>"` puts the program in the foreground, so Rex and your scripts see it as the tab's running process.
@@ -138,4 +138,4 @@ I moved about fifty long-running terminal programs (AI coding agents, mostly) fr
 
 ## Updates
 
-This repo is a copy of the Rex part of my dotfiles, and I update it from there. Issues and suggestions are welcome.
+This repo is a copy of the Rex part of my dotfiles, and I update it from there. Issues and suggestions are welcome. Thanks to Superlogical for Rex.
